@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neo4j HotpotQA 多跳问答知识图谱</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Neo4j HotpotQA 多跳问答知识图谱</h1>
+      <p>支持关键词检索、多跳证据路径查询、简单聚类统计和图谱可视化</p>
+    </header>
+
+    <main class="layout">
+      <aside class="panel">
+        <h2>问题检索</h2>
+        <div class="search-box">
+          <input id="keyword" type="search" placeholder="输入关键词，例如 Henry James" />
+          <button id="searchButton">搜索</button>
+        </div>
+        <div id="status" class="status">准备检索</div>
+        <div id="resultList" class="result-list"></div>
+      </aside>
+
+      <section class="main">
+        <section class="panel detail-grid">
+          <div>
+            <h2 id="questionTitle">请选择一个问题</h2>
+            <div class="meta" id="detailMeta"></div>
+          </div>
+          <div>
+            <h2>答案</h2>
+            <div id="answerText" class="answer">暂无</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>多跳支撑事实</h2>
+          <ol id="pathList" class="path-list"></ol>
+        </section>
+
+        <section class="panel">
+          <h2>多跳关系图谱</h2>
+          <div id="graphChart" class="graph-chart"></div>
+        </section>
+
+        <section class="cluster-grid">
+          <div class="panel">
+            <div id="typeChart" class="cluster-chart"></div>
+          </div>
+          <div class="panel">
+            <div id="levelChart" class="cluster-chart"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="./sample-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

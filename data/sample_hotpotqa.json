@@ -1,0 +1,56 @@
+[
+  {
+    "id": "sample-001",
+    "question": "What government position was held by the woman who portrayed Corliss Archer in the film Kiss and Tell?",
+    "answer": "Chief of Protocol of the United States",
+    "type": "bridge",
+    "level": "medium",
+    "context": [
+      {
+        "title": "Kiss and Tell",
+        "sentences": [
+          "Kiss and Tell is a 1945 American comedy film.",
+          "The film stars Shirley Temple as Corliss Archer."
+        ]
+      },
+      {
+        "title": "Shirley Temple",
+        "sentences": [
+          "Shirley Temple was an American actress, singer, dancer, businesswoman, and diplomat.",
+          "She served as Chief of Protocol of the United States."
+        ]
+      }
+    ],
+    "supporting_facts": [
+      {"title": "Kiss and Tell", "sent_id": 1},
+      {"title": "Shirley Temple", "sent_id": 1}
+    ]
+  },
+  {
+    "id": "sample-002",
+    "question": "Are both The Golden Bowl and The Wings of the Dove novels by Henry James?",
+    "answer": "yes",
+    "type": "comparison",
+    "level": "easy",
+    "context": [
+      {
+        "title": "The Golden Bowl",
+        "sentences": [
+          "The Golden Bowl is a 1904 novel by Henry James.",
+          "It explores marriage and betrayal."
+        ]
+      },
+      {
+        "title": "The Wings of the Dove",
+        "sentences": [
+          "The Wings of the Dove is a 1902 novel by Henry James.",
+          "It has been adapted for film and television."
+        ]
+      }
+    ],
+    "supporting_facts": [
+      {"title": "The Golden Bowl", "sent_id": 0},
+      {"title": "The Wings of the Dove", "sent_id": 0}
+    ]
+  }
+]
