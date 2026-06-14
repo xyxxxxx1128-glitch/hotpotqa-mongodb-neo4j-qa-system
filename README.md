@@ -45,6 +45,27 @@ Settings -> Pages
 
 ## 当前数据规模
 
+数据来源：
+
+- HotpotQA Hugging Face 数据集页面：https://huggingface.co/datasets/hotpotqa/hotpot_qa
+- 本项目使用 `distractor` 配置下的训练数据文件 `train-00000-of-00002.parquet`
+
+HotpotQA `distractor` 配置的原始规模约为：
+
+```text
+train: 90447 条
+validation: 7405 条
+总计: 97852 条
+```
+
+本实验没有直接导入完整数据集，而是取前 10000 条真实样本进行系统构建和展示。原因是：
+
+- 课程作业重点是验证数据库建模、查询、聚类和可视化流程，不需要全量数据才能展示功能。
+- 免费云数据库容量有限，不适合承载完整 HotpotQA 数据。
+- 本地全量导入会占用更多磁盘空间和导入时间。
+- 10000 条已经能形成较大规模图谱，足以展示多跳关系查询、检索和统计效果。
+- 导入脚本支持调整 `--limit`，也支持不设置 `--limit` 时导入完整 split。
+
 本地实验已导入：
 
 ```text

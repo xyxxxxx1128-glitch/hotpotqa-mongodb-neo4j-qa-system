@@ -4,7 +4,21 @@
 
 本项目使用 HotpotQA 数据集。HotpotQA 是多跳问答数据集，每条数据包含问题、答案、问题类型、难度、上下文文档、候选句子和支撑事实。
 
-实验版本导入 HotpotQA `distractor` 配置中的 10000 条真实数据。
+数据来源：
+
+```text
+https://huggingface.co/datasets/hotpotqa/hotpot_qa
+```
+
+本项目使用 `distractor` 配置。该配置原始规模约为：
+
+```text
+train: 90447 条
+validation: 7405 条
+总计: 97852 条
+```
+
+实验版本从训练集文件中导入前 10000 条真实数据。这样可以在本地资源可控的情况下，完成 MongoDB 与 Neo4j 的建模、检索、多跳查询、聚类和可视化验证。导入脚本支持通过 `--limit` 调整导入数量，也支持不设置 `--limit` 时导入完整 split。
 
 ## 2. 混合数据库分工
 
