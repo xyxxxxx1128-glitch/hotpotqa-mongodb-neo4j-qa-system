@@ -56,7 +56,7 @@ async function runSearch() {
     const questions = await apiGet(`/api/search?q=${encodeURIComponent(keyword)}&limit=20`);
     state.usingSampleData = false;
     renderResults(questions);
-    setStatus("已连接 FastAPI + Neo4j 后端");
+    setStatus("已连接 FastAPI + MongoDB + Neo4j 后端");
   } catch (error) {
     const questions = window.SAMPLE_DATA.questions.filter((item) => {
       const text = `${item.question} ${item.answer} ${item.type} ${item.level}`.toLowerCase();
@@ -64,7 +64,7 @@ async function runSearch() {
     });
     state.usingSampleData = true;
     renderResults(questions);
-    setStatus("当前使用 GitHub Pages 静态示例数据");
+    setStatus("当前使用 GitHub Pages 静态展示数据");
   }
 }
 
@@ -191,22 +191,71 @@ async function loadClusters() {
     typeData = window.SAMPLE_DATA.clusters.type;
     levelData = window.SAMPLE_DATA.clusters.level;
   }
-  renderBarChart(state.typeChart, "问题类型聚类", typeData);
-  renderBarChart(state.levelChart, "问题难度聚类", levelData);
+  renderBarChart(state.typeChart, "问题类型聚类", typeData, "类型");
+  renderBarChart(state.levelChart, "问题难度聚类", levelData, "难度");
 }
 
-function renderBarChart(chart, title, data) {
+function renderBarChart(chart, title, data, xAxisName) {
   chart.setOption({
-    title: { text: title, left: "center", top: 8, textStyle: { fontSize: 15 } },
-    tooltip: {},
-    grid: { left: 36, right: 16, top: 56, bottom: 36 },
-    xAxis: { type: "category", data: data.map((item) => item.name) },
-    yAxis: { type: "value" },
+    title: {
+      text: title,
+      left: "center",
+      top: 8,
+      textStyle: { fontSize: 16, fontWeight: 700, color: "#142033" },
+    },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      valueFormatter: (value) => `${Number(value).toLocaleString()} 条`,
+    },
+    grid: { left: 92, right: 28, top: 64, bottom: 48, containLabel: false },
+    xAxis: {
+      type: "category",
+      name: xAxisName,
+      nameLocation: "middle",
+      nameGap: 30,
+      data: data.map((item) => item.name),
+      axisLabel: { color: "#475467", fontSize: 12 },
+      axisLine: { lineStyle: { color: "#98a2b3" } },
+    },
+    yAxis: {
+      type: "value",
+      name: "数量（条）",
+      nameGap: 48,
+      nameTextStyle: { color: "#475467", fontWeight: 700 },
+      axisLabel: {
+        color: "#475467",
+        formatter: (value) => Number(value).toLocaleString(),
+        margin: 14,
+      },
+      splitLine: { lineStyle: { color: "#e4eaf2" } },
+    },
     series: [
       {
         type: "bar",
         data: data.map((item) => item.count),
-        itemStyle: { color: "#2563eb", borderRadius: [4, 4, 0, 0] },
+        barMaxWidth: 80,
+        label: {
+          show: true,
+          position: "top",
+          color: "#142033",
+          fontWeight: 700,
+          formatter: (params) => Number(params.value).toLocaleString(),
+        },
+        itemStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "#2563eb" },
+              { offset: 1, color: "#0f766e" },
+            ],
+          },
+          borderRadius: [6, 6, 0, 0],
+        },
       },
     ],
   });
