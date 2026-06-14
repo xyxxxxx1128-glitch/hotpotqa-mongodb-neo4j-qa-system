@@ -6,17 +6,12 @@
 
 前端页面通过 GitHub Pages 托管。
 
-如果仓库已经改名为 `hotpotqa-mongodb-neo4j-qa-system`，访问：
+如果仓库名为 `hotpotqa-mongodb-neo4j-qa-system`，访问：
 
 ```text
 https://xyxxxxx1128-glitch.github.io/hotpotqa-mongodb-neo4j-qa-system/
 ```
 
-如果仓库仍然使用旧名称 `neo4j-hotpotqa-qa-system`，访问：
-
-```text
-https://xyxxxxx1128-glitch.github.io/neo4j-hotpotqa-qa-system/
-```
 
 也可以在 GitHub 仓库中进入：
 
