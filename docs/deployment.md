@@ -1,15 +1,24 @@
 # 部署说明
 
-## 1. Neo4j
+## 1. 数据库
 
-可以选择本地 Neo4j 或 Neo4j AuraDB。
+本项目使用 MongoDB + Neo4j 混合架构。
 
-### 本地 Neo4j
+### MongoDB
 
-1. 安装 Neo4j Desktop
-2. 创建数据库
-3. 启动数据库
-4. 记录连接信息：
+可以使用本地 MongoDB，也可以使用 MongoDB Atlas。课程作业本地演示时，建议先用本地 MongoDB。
+
+默认连接：
+
+```text
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DATABASE=hotpotqa
+MONGODB_COLLECTION=questions
+```
+
+### Neo4j
+
+使用 Neo4j Desktop 创建本地实例，例如 `hotpotqa-db`，启动后记录连接信息：
 
 ```text
 NEO4J_URI=bolt://localhost:7687
@@ -18,37 +27,108 @@ NEO4J_PASSWORD=你的密码
 NEO4J_DATABASE=neo4j
 ```
 
-### Neo4j AuraDB
+## 2. Python 虚拟环境
 
-1. 进入 Neo4j Aura 官网
-2. 创建免费实例
-3. 下载或复制连接信息
-4. 将 `.env` 中的连接信息替换为 AuraDB 提供的 URI、用户名和密码
-
-## 2. 后端 FastAPI
-
-### 本地运行
+Windows PowerShell：
 
 ```bash
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+如果 PowerShell 阻止启用脚本，可以使用：
+
+```bash
+.\.venv\Scripts\activate.bat
+```
+
+macOS / Linux：
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 3. 导入 HotpotQA
+
+先用示例数据检查 Neo4j 连接：
+
+```bash
+python scripts/import_sample.py
+```
+
+正式导入 10000 条 HotpotQA 真实数据到 MongoDB + Neo4j：
+
+```bash
+python scripts/import_hotpotqa.py --limit 10000 --clear
+```
+
+如果 Hugging Face 访问失败，可以下载数据文件后从本地导入：
+
+```bash
+python scripts/import_hotpotqa.py --data-file path\to\hotpotqa.parquet --limit 10000 --clear
+```
+
+默认只导入支撑事实句子，用于降低 Neo4j 空间占用。如果要把所有候选 context 句子都写入 Neo4j，使用：
+
+```bash
+python scripts/import_hotpotqa.py --limit 10000 --clear --include-all-context
+```
+
+如果后续要全量导入 train split，可以不设置 `--limit`：
+
+```bash
+python scripts/import_hotpotqa.py --clear
+```
+
+继续导入 validation split 时，不要加 `--clear`：
+
+```bash
+python scripts/import_hotpotqa.py --split validation
+```
+
+注意：`--clear` 会清空 Neo4j 中已有节点和关系。
+
+## 4. 启动后端
+
+```bash
 uvicorn backend.main:app --reload
 ```
 
-访问：
+访问接口文档：
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-### Render 部署
+## 5. 前端 GitHub Pages
 
-Render Web Service 可使用：
+前端文件在 `frontend/` 目录。项目已经提供 `.github/workflows/pages.yml`，推送到 `main` 分支后会自动发布 GitHub Pages。
 
-```bash
-uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+GitHub 仓库设置中需要进入：
+
+```text
+Settings -> Pages -> Source -> GitHub Actions
 ```
 
-需要在 Render 的环境变量里配置：
+如果后端部署到了云端，只需要修改 `frontend/config.js`：
+
+```js
+window.API_BASE = "https://你的后端地址";
+```
+
+## 6. Render 后端部署
+
+如果要把 FastAPI 部署到 Render，Web Service 设置如下：
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+```
+
+Render 环境变量：
 
 ```text
 NEO4J_URI
@@ -58,42 +138,13 @@ NEO4J_DATABASE
 CORS_ORIGINS
 ```
 
-`CORS_ORIGINS` 填写你的 GitHub Pages 地址，例如：
+`CORS_ORIGINS` 填 GitHub Pages 地址，例如：
 
 ```text
-https://你的用户名.github.io
+https://xyxxxxx1128-glitch.github.io
 ```
 
-## 3. 前端 GitHub Pages
-
-前端文件在 `frontend/` 目录。
-
-如果只做静态演示，直接把仓库上传 GitHub。项目已经提供 `.github/workflows/pages.yml`，它会在推送到 `main` 分支后自动把 `frontend/` 发布到 GitHub Pages。
-
-GitHub 仓库设置中需要进入：
-
-```text
-Settings -> Pages -> Source -> GitHub Actions
-```
-
-如果后端已经部署，需要在 `frontend/app.js` 中修改：
-
-```js
-const API_BASE = "https://你的后端地址";
-```
-
-## 4. GitHub 上传命令
-
-```bash
-git init
-git add .
-git commit -m "Initial Neo4j HotpotQA project"
-git branch -M main
-git remote add origin https://github.com/你的用户名/你的仓库名.git
-git push -u origin main
-```
-
-## 5. 答辩展示建议
+## 7. 答辩展示建议
 
 展示顺序：
 

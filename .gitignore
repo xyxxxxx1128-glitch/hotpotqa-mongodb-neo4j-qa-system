@@ -5,5 +5,7 @@ __pycache__/
 .venv/
 venv/
 data/raw/
+data/*.parquet
+data/*.jsonl
 data/*.db
 *.log

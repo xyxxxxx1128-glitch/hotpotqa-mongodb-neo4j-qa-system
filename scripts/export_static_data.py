@@ -1,47 +1,33 @@
+import argparse
 import json
+import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from backend.mongo_client import mongo_client
 from backend.neo4j_client import neo4j_client
 
 
-ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_FILE = ROOT / "frontend" / "sample-data.js"
 
 
 def main() -> None:
-    questions = neo4j_client.run(
-        """
-        MATCH (q:Question)
-        OPTIONAL MATCH (q)-[:HAS_ANSWER]->(a:Answer)
-        RETURN q.id AS id,
-               q.text AS question,
-               a.text AS answer,
-               q.type AS type,
-               q.level AS level
-        ORDER BY q.id
-        LIMIT 30
-        """
-    )
+    parser = argparse.ArgumentParser(description="Export Neo4j data for GitHub Pages.")
+    parser.add_argument("--limit", type=int, default=50, help="Number of questions to export")
+    args = parser.parse_args()
+
+    questions = mongo_client.search("", args.limit)
     graphs = {}
     for question in questions:
         graph = build_graph(question["id"])
         graphs[question["id"]] = graph
 
     clusters = {
-        "type": neo4j_client.run(
-            """
-            MATCH (q:Question)
-            RETURN coalesce(q.type, "unknown") AS name, count(q) AS count
-            ORDER BY count DESC
-            """
-        ),
-        "level": neo4j_client.run(
-            """
-            MATCH (q:Question)
-            RETURN coalesce(q.level, "unknown") AS name, count(q) AS count
-            ORDER BY count DESC
-            """
-        ),
+        "type": mongo_client.cluster_counts("type"),
+        "level": mongo_client.cluster_counts("level"),
     }
 
     payload = {"questions": questions, "graphs": graphs, "clusters": clusters}

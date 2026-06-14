@@ -2,15 +2,16 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
+from backend.mongo_client import mongo_client
 from backend.neo4j_client import neo4j_client
 
 
 settings = get_settings()
 
 app = FastAPI(
-    title="Neo4j HotpotQA API",
-    description="HotpotQA 多跳问答知识图谱查询接口",
-    version="1.0.0",
+    title="MongoDB + Neo4j HotpotQA API",
+    description="HotpotQA 多跳问答混合数据库查询接口",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -25,7 +26,7 @@ app.add_middleware(
 @app.get("/")
 def root() -> dict:
     return {
-        "name": "Neo4j HotpotQA API",
+        "name": "MongoDB + Neo4j HotpotQA API",
         "status": "running",
         "docs": "/docs",
     }
@@ -33,8 +34,12 @@ def root() -> dict:
 
 @app.get("/api/health")
 def health() -> dict:
-    rows = neo4j_client.run("RETURN 1 AS ok")
-    return {"ok": rows[0]["ok"] == 1}
+    neo4j_rows = neo4j_client.run("RETURN 1 AS ok")
+    return {
+        "ok": neo4j_rows[0]["ok"] == 1 and mongo_client.ping(),
+        "mongodb": "connected",
+        "neo4j": "connected",
+    }
 
 
 @app.get("/api/search")
@@ -42,21 +47,13 @@ def search_questions(
     q: str = Query("", description="关键词"),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[dict]:
-    query = """
-    MATCH (question:Question)
-    OPTIONAL MATCH (question)-[:HAS_ANSWER]->(answer:Answer)
-    WITH question, answer
-    WHERE $keyword = "" OR toLower(question.text) CONTAINS toLower($keyword)
-       OR toLower(coalesce(answer.text, "")) CONTAINS toLower($keyword)
-    RETURN question.id AS id,
-           question.text AS question,
-           answer.text AS answer,
-           question.type AS type,
-           question.level AS level
-    ORDER BY question.id
-    LIMIT $limit
-    """
-    return neo4j_client.run(query, keyword=q, limit=limit)
+    return mongo_client.search(q, limit)
+
+
+@app.get("/api/question/{question_id}")
+def question_detail(question_id: str) -> dict:
+    item = mongo_client.get_question(question_id)
+    return item or {}
 
 
 @app.get("/api/question/{question_id}/graph")
@@ -82,7 +79,27 @@ def question_graph(question_id: str) -> dict:
     """
     rows = neo4j_client.run(query, question_id=question_id)
     if not rows:
-        return {"question": {}, "answer": None, "nodes": [], "links": []}
+        mongo_item = mongo_client.get_question(question_id)
+        if not mongo_item:
+            return {"question": {}, "answer": None, "nodes": [], "links": []}
+        question = {
+            "id": mongo_item["id"],
+            "text": mongo_item["question"],
+            "type": mongo_item.get("type"),
+            "level": mongo_item.get("level"),
+        }
+        return {
+            "question": question,
+            "answer": mongo_item.get("answer"),
+            "nodes": [
+                {
+                    "id": f"q:{question['id']}",
+                    "name": question["text"],
+                    "category": "Question",
+                }
+            ],
+            "links": [],
+        }
 
     row = rows[0]
     question = row["question"]
@@ -165,24 +182,15 @@ def question_graph(question_id: str) -> dict:
 
 @app.get("/api/clusters/type")
 def clusters_by_type() -> list[dict]:
-    query = """
-    MATCH (q:Question)
-    RETURN coalesce(q.type, "unknown") AS name, count(q) AS count
-    ORDER BY count DESC
-    """
-    return neo4j_client.run(query)
+    return mongo_client.cluster_counts("type")
 
 
 @app.get("/api/clusters/level")
 def clusters_by_level() -> list[dict]:
-    query = """
-    MATCH (q:Question)
-    RETURN coalesce(q.level, "unknown") AS name, count(q) AS count
-    ORDER BY count DESC
-    """
-    return neo4j_client.run(query)
+    return mongo_client.cluster_counts("level")
 
 
 @app.on_event("shutdown")
 def shutdown() -> None:
     neo4j_client.close()
+    mongo_client.close()

@@ -1,20 +1,43 @@
-# Neo4j 数据库设计
+# MongoDB + Neo4j 数据库设计
 
 ## 1. 数据集
 
-本项目使用 HotpotQA 数据集。HotpotQA 是一个多跳问答数据集，每条数据包含问题、答案、问题类型、难度、上下文文档和支撑事实。
+本项目使用 HotpotQA 数据集。HotpotQA 是多跳问答数据集，每条数据包含问题、答案、问题类型、难度、上下文文档、候选句子和支撑事实。
 
-核心字段：
+实验版本导入 HotpotQA `distractor` 配置中的 10000 条真实数据。
 
-- `id`：问题编号
-- `question`：问题文本
-- `answer`：答案
-- `type`：问题类型，例如 `bridge`、`comparison`
-- `level`：问题难度，例如 `easy`、`medium`、`hard`
-- `context`：候选上下文文章和句子
-- `supporting_facts`：真正支持答案的关键句子
+## 2. 混合数据库分工
 
-## 2. 图数据库建模
+| 数据库 | 保存内容 | 作用 |
+|---|---|---|
+| MongoDB | 完整 HotpotQA JSON 原始记录 | 检索、详情展示、聚类统计 |
+| Neo4j | 问题、答案、文档、支撑事实关系 | 多跳路径查询、图谱可视化 |
+
+这种设计避免把所有候选句子都写入 Neo4j，降低图数据库体积。
+
+## 3. MongoDB 文档结构
+
+MongoDB 中每条 HotpotQA 数据作为一个文档保存：
+
+```json
+{
+  "id": "...",
+  "question": "...",
+  "answer": "...",
+  "type": "bridge",
+  "level": "medium",
+  "context": {...},
+  "supporting_facts": {...}
+}
+```
+
+MongoDB 主要用于：
+
+- 按关键词检索问题和答案
+- 获取完整上下文
+- 按 `type` 和 `level` 聚类统计
+
+## 4. Neo4j 图模型
 
 ### 节点
 
@@ -23,7 +46,7 @@
 | `Question` | 问题 | `id`, `text`, `type`, `level` |
 | `Answer` | 答案 | `text` |
 | `Document` | 上下文文章 | `title` |
-| `Sentence` | 文章句子 | `id`, `text`, `sent_id`, `title` |
+| `Sentence` | 支撑事实句子 | `id`, `text`, `sent_id`, `title` |
 | `Type` | 问题类型 | `name` |
 | `Level` | 问题难度 | `name` |
 
@@ -32,15 +55,13 @@
 | 关系 | 含义 |
 |---|---|
 | `(Question)-[:HAS_ANSWER]->(Answer)` | 问题对应答案 |
-| `(Question)-[:HAS_CONTEXT]->(Document)` | 问题包含候选上下文文章 |
-| `(Document)-[:HAS_SENTENCE]->(Sentence)` | 文章包含句子 |
-| `(Question)-[:SUPPORTS]->(Sentence)` | 句子是回答该问题的支撑事实 |
-| `(Question)-[:HAS_TYPE]->(Type)` | 问题属于某种类型 |
-| `(Question)-[:HAS_LEVEL]->(Level)` | 问题属于某种难度 |
+| `(Question)-[:HAS_CONTEXT]->(Document)` | 问题涉及上下文文章 |
+| `(Document)-[:HAS_SENTENCE]->(Sentence)` | 文档包含支撑事实句子 |
+| `(Question)-[:SUPPORTS]->(Sentence)` | 句子支持回答该问题 |
+| `(Question)-[:HAS_TYPE]->(Type)` | 问题类型 |
+| `(Question)-[:HAS_LEVEL]->(Level)` | 问题难度 |
 
-## 3. 多跳查询含义
-
-HotpotQA 的一个问题通常需要结合多个支撑事实才能得到答案。在 Neo4j 中可以表示为：
+## 5. 多跳路径
 
 ```text
 Question -> Supporting Sentence 1 -> Document 1
@@ -48,41 +69,17 @@ Question -> Supporting Sentence 2 -> Document 2
 Question -> Answer
 ```
 
-这样可以通过图路径直观展示推理过程。
+前端图谱展示的就是该路径。
 
-## 4. 常用 Cypher
+## 6. 存储优化
 
-### 关键词检索
+默认导入时：
 
-```cypher
-MATCH (q:Question)
-OPTIONAL MATCH (q)-[:HAS_ANSWER]->(a:Answer)
-WHERE toLower(q.text) CONTAINS toLower($keyword)
-   OR toLower(a.text) CONTAINS toLower($keyword)
-RETURN q.id AS id, q.text AS question, a.text AS answer, q.type AS type, q.level AS level
-LIMIT 20;
-```
+- MongoDB 保存完整 `context`
+- Neo4j 只保存 `supporting_facts` 对应的支撑事实句子
 
-### 查询多跳支撑事实
+如果需要完整图谱，可使用：
 
-```cypher
-MATCH (q:Question {id: $id})-[:SUPPORTS]->(s:Sentence)<-[:HAS_SENTENCE]-(d:Document)
-OPTIONAL MATCH (q)-[:HAS_ANSWER]->(a:Answer)
-RETURN q, d, s, a;
-```
-
-### 按类型聚类统计
-
-```cypher
-MATCH (q:Question)
-RETURN q.type AS type, count(q) AS count
-ORDER BY count DESC;
-```
-
-### 按难度聚类统计
-
-```cypher
-MATCH (q:Question)
-RETURN q.level AS level, count(q) AS count
-ORDER BY count DESC;
+```bash
+python scripts/import_hotpotqa.py --limit 10000 --clear --include-all-context
 ```

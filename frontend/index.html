@@ -3,18 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Neo4j HotpotQA 多跳问答知识图谱</title>
+    <title>MongoDB + Neo4j HotpotQA 多跳问答系统</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="app-header">
-      <h1>Neo4j HotpotQA 多跳问答知识图谱</h1>
-      <p>支持关键词检索、多跳证据路径查询、简单聚类统计和图谱可视化</p>
+      <div class="hero-copy">
+        <span class="eyebrow">MongoDB · Neo4j · HotpotQA</span>
+        <h1>HotpotQA 多跳问答混合数据库系统</h1>
+        <p>MongoDB 保存完整问答原文，Neo4j 管理多跳推理关系，展示从检索到支撑事实路径的完整过程。</p>
+      </div>
+      <div class="hero-stats" aria-label="项目能力">
+        <div>
+          <strong>Graph</strong>
+          <span>Neo4j 图谱建模</span>
+        </div>
+        <div>
+          <strong>Search</strong>
+          <span>MongoDB 关键词检索</span>
+        </div>
+        <div>
+          <strong>Cluster</strong>
+          <span>类型/难度聚类</span>
+        </div>
+      </div>
     </header>
 
     <main class="layout">
       <aside class="panel">
-        <h2>问题检索</h2>
+        <div class="panel-title">
+          <h2>问题检索</h2>
+          <span>Search</span>
+        </div>
         <div class="search-box">
           <input id="keyword" type="search" placeholder="输入关键词，例如 Henry James" />
           <button id="searchButton">搜索</button>
@@ -26,22 +46,35 @@
       <section class="main">
         <section class="panel detail-grid">
           <div>
-            <h2 id="questionTitle">请选择一个问题</h2>
+            <div class="panel-title compact">
+              <h2>当前问题</h2>
+              <span>Question</span>
+            </div>
+            <h3 id="questionTitle" class="question-heading">请选择一个问题</h3>
             <div class="meta" id="detailMeta"></div>
           </div>
-          <div>
-            <h2>答案</h2>
+          <div class="answer-box">
+            <div class="panel-title compact">
+              <h2>答案</h2>
+              <span>Answer</span>
+            </div>
             <div id="answerText" class="answer">暂无</div>
           </div>
         </section>
 
         <section class="panel">
-          <h2>多跳支撑事实</h2>
+          <div class="panel-title">
+            <h2>多跳支撑事实</h2>
+            <span>Evidence Path</span>
+          </div>
           <ol id="pathList" class="path-list"></ol>
         </section>
 
         <section class="panel">
-          <h2>多跳关系图谱</h2>
+          <div class="panel-title">
+            <h2>多跳关系图谱</h2>
+            <span>Graph Visualization</span>
+          </div>
           <div id="graphChart" class="graph-chart"></div>
         </section>
 
@@ -57,6 +90,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="./config.js"></script>
     <script src="./sample-data.js"></script>
     <script src="./app.js"></script>
   </body>

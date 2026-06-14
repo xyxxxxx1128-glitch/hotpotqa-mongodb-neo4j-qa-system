@@ -1,4 +1,5 @@
 import hashlib
+from collections.abc import Iterable
 from typing import Any
 
 from neo4j import GraphDatabase
@@ -40,13 +41,31 @@ class HotpotQANeo4jImporter:
         with self.driver.session(database=self.database) as session:
             session.run("MATCH (n) DETACH DELETE n")
 
-    def import_items(self, items: list[dict[str, Any]]) -> None:
+    def import_items(
+        self,
+        items: Iterable[dict[str, Any]],
+        progress_every: int = 1000,
+        include_all_context_sentences: bool = False,
+    ) -> int:
+        count = 0
         with self.driver.session(database=self.database) as session:
             for item in items:
-                session.execute_write(self._import_one, item)
+                session.execute_write(
+                    self._import_one,
+                    item,
+                    include_all_context_sentences,
+                )
+                count += 1
+                if progress_every > 0 and count % progress_every == 0:
+                    print(f"Imported {count} records...")
+        return count
 
     @staticmethod
-    def _import_one(tx: Any, item: dict[str, Any]) -> None:
+    def _import_one(
+        tx: Any,
+        item: dict[str, Any],
+        include_all_context_sentences: bool,
+    ) -> None:
         question_id = str(item["id"])
         question_text = item["question"]
         answer_text = item.get("answer", "")
@@ -89,6 +108,10 @@ class HotpotQANeo4jImporter:
                 title=title,
             )
             for sent_id, sentence in enumerate(doc["sentences"]):
+                is_support = (title, sent_id) in support_set
+                if not include_all_context_sentences and not is_support:
+                    continue
+
                 sid = sentence_key(title, sent_id, sentence)
                 tx.run(
                     """
@@ -106,7 +129,7 @@ class HotpotQANeo4jImporter:
                     text=sentence,
                     sent_id=sent_id,
                 )
-                if (title, sent_id) in support_set:
+                if is_support:
                     tx.run(
                         """
                         MATCH (q:Question {id: $question_id})
